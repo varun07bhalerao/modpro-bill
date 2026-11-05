@@ -1,0 +1,10 @@
+{
+  "name": "billnexa",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Bill Nexa - AI Claims & Document Automation Platform",
+  "scripts": {
+    "build": "cd frontend && npm install && npm run build && cd .. && node copy-dist.cjs",
+    "start": "python -m uvicorn backend.app.main:app --host 0.0.0.0 --port 8000"
+  }
+}

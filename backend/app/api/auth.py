@@ -51,6 +51,9 @@ def get_current_user(authorization: str = Header(None), db: Session = Depends(ge
                 user = db.query(Profile).filter(Profile.id == user_id).first()
             if not user and email:
                 user = db.query(Profile).filter(Profile.email.ilike(email)).first()
+                if user and user_id and user.id != user_id:
+                    user.id = user_id
+                    db.commit()
             if user:
                 return user
 

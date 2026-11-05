@@ -17,7 +17,7 @@ from backend.app.models.schema import (
 from backend.app.api.auth import router as auth_router
 from backend.app.api.folders import router as folders_router
 from backend.app.api.documents import router as documents_router
-from backend.app.api.assignments import router as assignments_router
+from backend.app.api.assignments import router as assignments_router, resolve_employee_ids
 from backend.app.api.ai import router as ai_router
 from backend.app.api.tags import router as tags_router
 from backend.app.api.claims import router as claims_router
@@ -74,7 +74,8 @@ def get_system_stats(employee_id: str = None, db: Session = Depends(get_db)):
     """
     if employee_id:
         # Employee stats
-        emp_assignments = db.query(Assignment).filter(Assignment.employee_id == employee_id).all()
+        target_ids = resolve_employee_ids(db, employee_id)
+        emp_assignments = db.query(Assignment).filter(Assignment.employee_id.in_(target_ids)).all()
         total_assigned = len(emp_assignments)
         pending = sum(1 for a in emp_assignments if a.status == "Assigned")
         in_progress = sum(1 for a in emp_assignments if a.status == "In Progress")

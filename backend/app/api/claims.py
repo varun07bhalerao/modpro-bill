@@ -13,6 +13,7 @@ from backend.app.schemas.models import (
     ClaimSaveRequest, ClaimResponse
 )
 from backend.app.api.auth import get_current_user
+from backend.app.api.assignments import resolve_employee_ids
 
 router = APIRouter(prefix="/claims", tags=["Claims"])
 
@@ -44,7 +45,8 @@ def get_claims(
     if patient_name:
         query = query.filter(Claim.patient_name.ilike(f"%{patient_name.strip()}%"))
     if employee_id:
-        query = query.filter(Claim.employee_id == employee_id)
+        target_ids = resolve_employee_ids(db, employee_id)
+        query = query.filter(Claim.employee_id.in_(target_ids))
     if insurer:
         query = query.filter(Claim.insurer.ilike(f"%{insurer.strip()}%"))
     if claim_status and claim_status != "All Statuses":
