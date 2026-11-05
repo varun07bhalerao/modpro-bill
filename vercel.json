@@ -1,5 +1,10 @@
 {
   "version": 2,
+  "functions": {
+    "api/index.py": {
+      "excludeFiles": "{frontend/**,sample-data/**,storage/original-documents/**,storage/tagged-documents/**,docs/**,reference_materials/**}"
+    }
+  },
   "rewrites": [
     {
       "source": "/api/(.*)",
