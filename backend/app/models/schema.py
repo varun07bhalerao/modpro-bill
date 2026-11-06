@@ -299,6 +299,12 @@ class MasterProvider(Base):
     specialty = Column(String(100), default="Chiropractic")
 
 # Database session & init
+if "sqlite" in settings.DATABASE_URL:
+    try:
+        Path(settings.DATABASE_URL.replace("sqlite:////", "/").replace("sqlite:///", "")).parent.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        pass
+
 engine = create_engine(settings.DATABASE_URL, connect_args={"check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

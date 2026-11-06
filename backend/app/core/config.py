@@ -7,8 +7,19 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 load_dotenv(BASE_DIR / ".env")
 
-is_vercel = bool(os.getenv("VERCEL"))
-if is_vercel:
+def is_serverless_env() -> bool:
+    if os.getenv("VERCEL") or os.getenv("VERCEL_ENV") or os.getenv("AWS_LAMBDA_FUNCTION_NAME") or os.getenv("LAMBDA_TASK_ROOT"):
+        return True
+    storage_dir = BASE_DIR / "storage"
+    if storage_dir.exists() and not os.access(str(storage_dir), os.W_OK):
+        return True
+    if not storage_dir.exists() and not os.access(str(BASE_DIR), os.W_OK):
+        return True
+    return False
+
+is_serverless = is_serverless_env()
+
+if is_serverless:
     default_storage = Path("/tmp/storage")
     default_storage.mkdir(parents=True, exist_ok=True)
     (default_storage / "original-documents").mkdir(parents=True, exist_ok=True)
@@ -18,12 +29,21 @@ if is_vercel:
     src_db = BASE_DIR / "storage" / "billnexa.db"
     dest_db = default_storage / "billnexa.db"
     if not dest_db.exists() and src_db.exists():
-        shutil.copy2(str(src_db), str(dest_db))
+        try:
+            shutil.copy2(str(src_db), str(dest_db))
+        except Exception:
+            pass
 
-    default_db = f"sqlite:////tmp/storage/billnexa.db"
+    # Ensure SQLite points to writable /tmp
+    configured_db = os.getenv("DATABASE_URL")
+    if not configured_db or "sqlite" in configured_db:
+        final_db = f"sqlite:////tmp/storage/billnexa.db"
+    else:
+        final_db = configured_db
 else:
     default_storage = BASE_DIR / "storage"
-    default_db = f"sqlite:///{BASE_DIR / 'storage' / 'billnexa.db'}"
+    configured_db = os.getenv("DATABASE_URL")
+    final_db = configured_db or f"sqlite:///{BASE_DIR / 'storage' / 'billnexa.db'}"
 
 class Settings(BaseModel):
     APP_NAME: str = "Bill Nexa"
@@ -36,7 +56,7 @@ class Settings(BaseModel):
     TAGGED_DOCS_DIR: Path = default_storage / "tagged-documents"
     
     # Database
-    DATABASE_URL: str = os.getenv("DATABASE_URL", default_db)
+    DATABASE_URL: str = final_db
     
     # Supabase (Optional for direct connection)
     SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
@@ -57,6 +77,7 @@ settings = Settings()
 
 # Ensure directories exist
 try:
+    settings.STORAGE_DIR.mkdir(parents=True, exist_ok=True)
     settings.ORIGINAL_DOCS_DIR.mkdir(parents=True, exist_ok=True)
     settings.TAGGED_DOCS_DIR.mkdir(parents=True, exist_ok=True)
 except Exception:

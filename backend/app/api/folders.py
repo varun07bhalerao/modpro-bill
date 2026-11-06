@@ -94,6 +94,7 @@ async def upload_folder(
     db.refresh(folder)
 
     # Save each PDF
+    settings.ORIGINAL_DOCS_DIR.mkdir(parents=True, exist_ok=True)
     created_docs = []
     for file in files:
         original_name = Path(file.filename).name # preserve filename

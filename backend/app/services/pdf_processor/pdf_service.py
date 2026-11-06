@@ -81,6 +81,7 @@ class PDFService:
         # Clean tag name for filename
         clean_tag = tag_name.replace(" ", "_").replace("/", "_")
         filename = f"{document_id}_{clean_tag}_p{start_page}-{end_page}.pdf"
+        settings.TAGGED_DOCS_DIR.mkdir(parents=True, exist_ok=True)
         dest_path = settings.TAGGED_DOCS_DIR / filename
         
         new_doc.save(str(dest_path))
@@ -90,4 +91,3 @@ class PDFService:
         return f"tagged-documents/{filename}"
 
 pdf_service = PDFService()
-
