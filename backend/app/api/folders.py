@@ -134,6 +134,28 @@ async def upload_folder(
     db.add(log)
     db.commit()
 
+    # Sync uploaded documents to Supabase if configured
+    if settings.SUPABASE_URL and settings.SUPABASE_SERVICE_ROLE_KEY:
+        try:
+            from supabase import create_client
+            sb = create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_ROLE_KEY)
+            for d in created_docs:
+                try:
+                    sb.table("documents").upsert({
+                        "id": d.id,
+                        "file_name": d.original_filename,
+                        "storage_path": d.storage_path,
+                        "folder_name": clean_folder_name,
+                        "file_size": d.file_size_bytes,
+                        "page_count": d.total_pages,
+                        "priority": "Normal",
+                        "upload_status": "uploaded"
+                    }).execute()
+                except Exception as inner_e:
+                    print(f"Supabase doc sync notice: {inner_e}")
+        except Exception as e:
+            print(f"Supabase client notice: {e}")
+
     return {
         "message": f"Folder '{clean_folder_name}' uploaded successfully with {len(files)} PDF documents.",
         "folder_id": folder.id,

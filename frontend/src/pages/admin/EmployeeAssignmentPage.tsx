@@ -65,11 +65,29 @@ export const EmployeeAssignmentPage: React.FC = () => {
   const currentDoc = currentFolder?.documents.find(d => d.id === selectedDocId);
   const selectedEmp = employees.find(e => e.id === selectedEmployeeId);
 
+  // Automatically ensure valid document selected for the active folder
+  useEffect(() => {
+    if (folders.length > 0) {
+      const activeFolder = folders.find(f => f.id === selectedFolderId) || folders[0];
+      if (activeFolder) {
+        if (!selectedFolderId || selectedFolderId !== activeFolder.id) {
+          setSelectedFolderId(activeFolder.id);
+        }
+        const hasCurrentDoc = activeFolder.documents && activeFolder.documents.some(d => d.id === selectedDocId);
+        if (!hasCurrentDoc) {
+          const unassigned = activeFolder.documents?.find(d => d.assignment_status === 'Unassigned');
+          setSelectedDocId(unassigned ? unassigned.id : (activeFolder.documents?.[0]?.id || ''));
+        }
+      }
+    }
+  }, [folders, selectedFolderId]);
+
   const handleFolderChange = (fId: string) => {
     setSelectedFolderId(fId);
     const f = folders.find(item => item.id === fId);
-    if (f && f.documents.length > 0) {
-      setSelectedDocId(f.documents[0].id);
+    if (f && f.documents && f.documents.length > 0) {
+      const unassigned = f.documents.find(d => d.assignment_status === 'Unassigned');
+      setSelectedDocId(unassigned ? unassigned.id : f.documents[0].id);
     } else {
       setSelectedDocId('');
     }
@@ -230,11 +248,15 @@ export const EmployeeAssignmentPage: React.FC = () => {
                 onChange={(e) => setSelectedDocId(e.target.value)}
                 className="w-full text-xs border border-slate-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
               >
-                {currentFolder?.documents.map(d => (
-                  <option key={d.id} value={d.id}>
-                    {d.original_filename} ({d.total_pages} pages) - [{d.assignment_status}]
-                  </option>
-                ))}
+                {!currentFolder?.documents || currentFolder.documents.length === 0 ? (
+                  <option value="">-- No documents in this folder --</option>
+                ) : (
+                  currentFolder.documents.map(d => (
+                    <option key={d.id} value={d.id}>
+                      {d.original_filename} ({d.total_pages} pages) - [{d.assignment_status}]
+                    </option>
+                  ))
+                )}
               </select>
             </div>
 
